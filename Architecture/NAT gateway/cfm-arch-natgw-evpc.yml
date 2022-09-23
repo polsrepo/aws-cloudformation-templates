@@ -1,0 +1,96 @@
+Description: This template deploys a private subnet and a public subnet attached to a nat gateway to an existing VPC.
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+
+InternetGatewayId:
+    Description: Must be an Internet gateway attached to the VPC chosen above.
+    Type: String
+    
+  NewPrivateSubnetCidrBlock:
+    Type: String
+    Description: Must be a valid IP CIDR range of the form x.x.x.x/x.
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
+  
+  NewPublicSubnetCidrBlock:
+    Type: String
+    Description: Must be a valid IP CIDR range of the form x.x.x.x/x.
+    AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
+    ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
+
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+      - Label:
+          default: VPC
+        Parameters:
+          - InternetGatewayId
+          - NewPrivateSubnetCidrBlock
+          - NewPublicSubnetCidrBlock
+          
+Resources: 
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VpcId
+      MapPublicIpOnLaunch: true
+      CidrBlock: !Ref NewPublicSubnetCidrBlock
+  
+  PublicSubnetRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VpcId
+      
+  PublicSubnetRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGatewayId
+      RouteTableId: !Ref PublicSubnetRouteTable
+      
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicSubnetRouteTable
+      SubnetId: !Ref PublicSubnet
+
+  NatGatewayEIP:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: vpc
+
+  NatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties:
+      AllocationId:
+        Fn::GetAtt:
+        - NatGatewayEIP
+        - AllocationId
+      SubnetId: !Ref PublicSubnet
+  
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VpcId
+      MapPublicIpOnLaunch: false
+      CidrBlock: !Ref NewPrivateSubnetCidrBlock
+      
+  PrivateSubnetRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VpcId
+      
+  PrivateSubnetRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      DestinationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NatGateway
+      RouteTableId: !Ref PrivateSubnetRouteTable
+      
+  PrivateSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PrivateSubnetRouteTable
+      SubnetId: !Ref PrivateSubnet
