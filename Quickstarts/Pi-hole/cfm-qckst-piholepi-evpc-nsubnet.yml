@@ -1,4 +1,4 @@
-Description: CFM stack that deploys a pi-hole instance on an existing VPC in a new subnet
+Description: CFM stack that deploys a pi-hole instance in a new subnet inside an existing VPC
 
 Parameters:
   VpcId:
@@ -188,7 +188,6 @@ Resources:
         - Fn::GetAtt:
           - NewSecurityGroup
           - GroupId
-
       UserData:
         Fn::Base64: 
             !Sub
