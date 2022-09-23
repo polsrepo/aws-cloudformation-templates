@@ -1,4 +1,4 @@
-Description: CFM stack that deploys a pi-hole instance in a new VPC
+Description: This template deploys a "ready to go" pi-hole instance in a new VPC.
 
 Parameters:
   NewVpcCidrBlock:
