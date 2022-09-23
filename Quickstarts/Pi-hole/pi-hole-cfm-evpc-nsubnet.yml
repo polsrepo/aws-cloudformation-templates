@@ -1,7 +1,6 @@
-Description: pi-hole
+Description: CFM stack that deploys a pi-hole instance on an existing VPC in a new subnet
 
 Parameters:
-    
   VpcId:
     Type: AWS::EC2::VPC::Id
     
@@ -20,6 +19,18 @@ Parameters:
     AllowedPattern: "(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})\\.(\\d{1,3})/(\\d{1,2})"
     ConstraintDescription: Must be a valid IP CIDR range of the form x.x.x.x/x.
 
+  InstanceImageId:
+    Type : String
+    Description: USE THIS PARAMETER ONLY IF YOU ARE UPDATING THE STACK. Add the current AmiID of the instance.
+    Default: ''
+  
+  LatestUbuntu20AMI:
+    Type : 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Description: Do NOT change this value.
+    Default: /aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id
+    AllowedValues:
+      - /aws/service/canonical/ubuntu/server/20.04/stable/current/amd64/hvm/ebs-gp2/ami-id
+  
   InstanceType:
     Type: String
     Default: t3.small
@@ -34,19 +45,6 @@ Parameters:
 
   SshKeyPair:
     Type: AWS::EC2::KeyPair::KeyName
-  
-  AmiID:
-    Type: String
-    Description: Ubuntu 20.04 LTS. Choose between eu-west-1, eu-west-2, eu-west-3, us-east-1, us-east-2, us-west-1 or us-west-2. Default is eu-west-1.
-    Default: ami-0fd8802f94ed1c969
-    AllowedValues:
-      - ami-0fd8802f94ed1c969
-      - ami-04842bc62789b682e
-      - ami-064736ff8301af3ee
-      - ami-0149b2da6ceec4bb0
-      - ami-0d5bf08bc8017c83b
-      - ami-03f6d497fceb40069
-      - ami-0c09c7eb16d3e8e70
 
   ExistingSecurityGroupsIds:
     Description: Select any existing SGs you would like to associate the Pi-hole instance with.
@@ -54,25 +52,36 @@ Parameters:
 
   PiHolePassword:
     Type: String
+    NoEcho: true
 
 Metadata:
   AWS::CloudFormation::Interface:
     ParameterGroups:
       - Label:
-          default: VPC
+          default: Stack creation - VPC
         Parameters:
           - VpcId
           - NewSubnetCidrBlock
           - InternetGatewayId
           - SgIngressCidrIP
       - Label:
-          default: EC2
+          default: Stack creation - EC2
         Parameters:
           - InstanceType
           - SshKeyPair
-          - AmiID
           - ExistingSecurityGroupsIds
           - PiHolePassword
+      - Label:
+          default: Stack update - EC2
+        Parameters:
+          - InstanceImageId
+      - Label:
+          default: Do NOT change
+        Parameters:
+          - LatestUbuntu20AMI           
+
+Conditions:
+  HasInstanceImageId: !Not [!Equals [!Ref 'InstanceImageId', '']]
           
 Resources:
   ElasticIp:
@@ -167,7 +176,7 @@ Resources:
         - DeviceName: /dev/sda1
           Ebs:
             VolumeSize: 20
-      ImageId: !Ref AmiID
+      ImageId: !If [ HasInstanceImageId, !Ref InstanceImageId, !Ref LatestUbuntu20AMI]
       InstanceType: !Ref InstanceType
       KeyName: !Ref SshKeyPair
       SubnetId: !Ref PublicSubnet
