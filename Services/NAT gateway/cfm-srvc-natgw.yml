@@ -1,6 +1,6 @@
 # Author: https://github.com/polsrepo/aws-cloudformation-templates/
 
-Description: This template deploys a private subnet and a public subnet attached to a nat gateway to an existing VPC.
+Description: This template deploys to an existing VPC with an Internet gateway attached a private subnet, a public subnet, a nat gateway and an elastic IP address.
 
 Parameters:
   VpcId:
