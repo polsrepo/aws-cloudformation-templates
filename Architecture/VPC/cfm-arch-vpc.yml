@@ -3,7 +3,6 @@
 Description: This template deploys a VPC with an Internet gateway, a private subnet, a public subnet, a nat gateway and an elastic IP address.
 
 Parameters:
-
   Environment:
     Type: String
     AllowedValues:
